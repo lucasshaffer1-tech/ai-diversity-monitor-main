@@ -1,12 +1,22 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta http-equiv="refresh" content="0; url=TrustScan/prototype.html#reports" />
-  <title>TrustScan Reports</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TrustScan — Reports</title>
+  <meta name="robots" content="noindex">
+  <style>body{font-family:Arial,Helvetica,sans-serif;padding:24px;color:#334}</style>
 </head>
 <body>
-  <p>Redirecting to the Reports tab...</p>
-  <p><a href="TrustScan/prototype.html#reports">Open Reports</a></p>
+  <p>Loading TrustScan prototype — Reports...</p>
+  <script>
+    fetch('TrustScan/prototype.html')
+      .then(r => r.text())
+      .then(html => {
+        document.open(); document.write(html); document.close();
+        try { location.hash = '#reports'; } catch (e) { }
+      })
+      .catch(() => { document.body.innerHTML = '<p>Could not load the prototype. Open <a href="TrustScan/prototype.html">the prototype</a> instead.</p>'; });
+  </script>
 </body>
 </html>
