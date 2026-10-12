@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TrustScan | Clinical dashboard prototype</title>
+  <style>
+    :root {
+      --bg: #f5f7f6; --panel: #ffffff; --green: #1a472a; --green-2: #2d6a45;
+      --warning: #f0ad4e; --danger: #d9534f; --danger-soft: #fbe9e9;
+      --text: #222; --muted: #5c5c5c; --line: #e7e7e7;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: var(--bg); color: var(--text); }
+    body { min-height: 100vh; }
+    body.large { zoom: 1.12; }
+    :focus-visible { outline: 3px solid #2f80ed; outline-offset: 2px; }
+
+    .sample-banner { background: #fff7ea; color: #6b4a00; font-size: 12px; text-align: center; padding: 7px 12px; border-bottom: 1px solid #f0d9a8; }
+    .topbar { background: var(--green); color: #fff; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .brand { font-size: 20px; font-weight: 700; }
+    .brand small { display: block; font-size: 11px; font-weight: 400; opacity: 0.8; }
+    .nav { display: flex; gap: 8px; align-items: center; font-size: 14px; flex-wrap: wrap; }
+    .nav a { color: #fff; text-decoration: none; padding: 8px 12px; border-radius: 6px; }
+    .nav a:hover { background: rgba(255,255,255,0.08); }
+    .nav a[aria-current="page"] { background: rgba(255,255,255,0.18); font-weight: 700; }
+    .user { font-size: 13px; color: rgba(255,255,255,0.9); }
+
+    .page { max-width: 1360px; margin: 0 auto; padding: 28px 18px 20px; }
+    .view[hidden] { display: none; }
+    .view-title { font-size: 22px; color: var(--green); margin: 0 0 6px; }
+    .view-sub { font-size: 13px; color: var(--muted); margin: 0 0 22px; line-height: 1.5; max-width: 760px; }
+
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 24px; }
+    .card { background: var(--panel); border-left: 5px solid var(--green); border-radius: 10px; box-shadow: 0 2px 10px rgba(10,25,18,0.05); padding: 18px 20px; }
+    .label { font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 10px; }
+    .number { font-size: 30px; font-weight: 800; color: var(--green); line-height: 1.1; margin-bottom: 8px; }
+    .meta { font-size: 12px; color: var(--muted); }
+
+    .panel { background: var(--panel); border-radius: 10px; box-shadow: 0 2px 10px rgba(10,25,18,0.05); padding: 22px 22px 14px; margin-bottom: 22px; }
+    body.compact .panel { padding: 14px 16px 8px; margin-bottom: 14px; }
+    body.compact td, body.compact th { padding-top: 7px; padding-bottom: 7px; }
+    body.compact .alert { padding: 9px 12px; margin-bottom: 9px; }
+    .panel-title { font-size: 16px; font-weight: 700; color: var(--green); border-bottom: 2px solid var(--line); padding-bottom: 12px; margin-bottom: 18px; }
+    .empty { font-size: 13px; color: var(--muted); padding: 6px 0 14px; line-height: 1.6; }
+
+    .alert { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; border-left: 5px solid var(--danger); background: var(--danger-soft); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; cursor: pointer; }
+    .alert.warn { border-color: var(--warning); background: #fff7ea; }
+    .alert.dismissed { background: #f1f3f2; border-color: #b9c2bd; cursor: default; align-items: center; font-size: 13px; color: var(--muted); }
+    .alert-icon { width: 24px; height: 24px; flex: none; border-radius: 50%; background: var(--danger); color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+    .alert.warn .alert-icon { background: #b87400; }
+    .alert-body { flex: 1; }
+    .alert-title { font-size: 14px; font-weight: 700; color: #b42828; margin-bottom: 6px; }
+    .alert.warn .alert-title { color: #8a5600; }
+    .alert-text { color: #4a4a4a; font-size: 13px; line-height: 1.5; }
+    .alert-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: 10px; }
+    .dismiss-panel { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12px; }
+    .dismiss-panel[hidden] { display: none; }
+    .dismiss-panel select { font-size: 12px; padding: 7px 8px; border-radius: 6px; border: 1px solid #c9d1cd; }
+
+    .btn { border: none; border-radius: 6px; padding: 9px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .btn:hover { opacity: 0.92; }
+    .btn.primary { background: var(--green); color: #fff; }
+    .btn.secondary { background: #e7ece9; color: var(--text); }
+
+    .chart-sub { font-size: 12px; color: var(--muted); margin-bottom: 26px; line-height: 1.5; }
+    .chart { height: 240px; display: flex; gap: 10px; align-items: flex-end; padding: 22px 8px 0; border-bottom: 2px solid var(--line); margin-bottom: 34px; }
+    .bar { flex: 1; background: linear-gradient(to top, var(--green), var(--green-2)); border-radius: 8px 8px 0 0; position: relative; }
+    .bar-label { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .bar-value { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 700; color: var(--green); }
+
+    .toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; margin-bottom: 14px; }
+    .toolbar label { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
+    input[type="text"], input[type="search"], select { font: inherit; font-size: 13px; padding: 9px 10px; border-radius: 6px; border: 1px solid #c9d1cd; background: #fff; min-width: 180px; }
+
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 4px; min-width: 560px; }
+    th { text-align: left; background: #f7f7f7; font-size: 12px; color: var(--muted); padding: 12px 10px; border-bottom: 2px solid var(--line); }
+    td { padding: 12px 10px; border-bottom: 1px solid #f1f1f1; font-size: 13px; }
+    .badge { display: inline-block; padding: 4px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+    .badge.high { background: #fdd8d8; color: #9b1f1f; }
+    .badge.medium { background: #fce8bf; color: #7a5600; }
+    .badge.low, .badge.ok { background: #d8f3dd; color: #1d5f38; }
+
+    .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-bottom: 22px; }
+    .report-grid .card p { font-size: 13px; color: #4a4a4a; line-height: 1.5; margin: 0 0 14px; }
+
+    .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 22px; align-items: start; }
+    .field { margin-bottom: 18px; }
+    .field > label, .field > .field-label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .field .help { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 6px; }
+    .field input[type="text"], .field select { width: 100%; max-width: 360px; }
+    .field input[type="range"] { width: 100%; max-width: 360px; accent-color: var(--green); }
+    .range-row { display: flex; align-items: center; gap: 12px; }
+    .range-row output { font-weight: 700; color: var(--green); min-width: 44px; }
+    .check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.5; }
+    .check input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--green); }
+    .settings-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 22px; }
+    .save-note { font-size: 12px; color: var(--muted); }
+
+    .notice { background: #fff7ea; border: 1px solid #f0d9a8; color: #5c4200; border-radius: 8px; padding: 10px 14px; font-size: 13px; line-height: 1.5; margin-bottom: 18px; max-width: 760px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px 18px; margin-bottom: 18px; }
+    .form-grid label, .tool-row legend { display: block; font-size: 12px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
+    .form-grid input, .form-grid select { width: 100%; min-width: 0; font: inherit; font-size: 13px; padding: 9px 10px; border-radius: 6px; border: 1px solid #c9d1cd; background: #fff; }
+    .tool-row { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px 14px; margin: 0 0 14px; }
+    .tool-row legend { padding: 0 6px; color: var(--green); font-size: 13px; }
+    .tool-row .form-grid { margin: 0; }
+    .err { color: #b42828; font-size: 13px; min-height: 20px; margin: 4px 0 12px; }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; border-bottom: 2px solid var(--line); padding-bottom: 12px; margin-bottom: 14px; }
+    .panel-head .panel-title { border: 0; padding: 0; margin: 0; }
+    .modal { position: fixed; inset: 0; background: rgba(20,20,20,0.55); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 24px; }
+    .modal.open { display: flex; }
+    .modal-box { background: #fff; width: min(820px, 100%); border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.35); max-height: 88vh; overflow: auto; }
+    .modal-header { padding: 18px 22px; border-bottom: 2px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .modal-header h2 { margin: 0; font-size: 20px; color: var(--green); }
+    .close { border: none; background: none; font-size: 28px; color: #555; cursor: pointer; line-height: 1; padding: 0 6px; }
+    .modal-body { padding: 18px 22px 26px; }
+    .mini-label { font-size: 13px; font-weight: 700; color: var(--green); margin: 18px 0 10px; }
+    .modal-body > .mini-label:first-of-type { margin-top: 0; }
+    .tool-output { background: #f8faf9; border-left: 4px solid var(--green); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; font-size: 13px; color: #37423e; }
+    .tool-output.flag { border-left-color: #b87400; background: #fff9ee; }
+    .tool-output strong { color: var(--green); }
+    .rec { font-size: 13px; color: #333; line-height: 1.7; margin: 0; }
+    .case-actions { margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+    ul { margin: 0 0 0 20px; padding: 0; }
+    li { margin-bottom: 8px; color: #4a4a4a; font-size: 13px; line-height: 1.5; }
+    .audit-time { color: var(--muted); margin-right: 8px; font-variant-numeric: tabular-nums; }
+
+    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1f2933; color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 2000; max-width: 90vw; }
+    .toast.show { opacity: 1; }
+    .footer { text-align: center; color: var(--muted); font-size: 12px; padding: 18px 12px 32px; line-height: 1.6; }
+
+    @media (max-width: 700px) {
+      .topbar { flex-direction: column; align-items: flex-start; }
+      .alert { flex-direction: column; }
+      .alert-actions { margin-left: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) { .toast { transition: none; } }
+  </style>
+</head>
+<body>
+  <div class="sample-banner">Prototype with made-up sample data. No real patient data or hospital systems are connected.</div>
+  <header class="topbar">
+    <div class="brand">TrustScan<small>AI independence monitor</small></div>
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="#dashboard" data-nav="dashboard">Dashboard</a>
+      <a href="#cases" data-nav="cases">Cases</a>
+      <a href="#records" data-nav="records">Records</a>
+      <a href="#tools" data-nav="tools">Tools</a>
+      <a href="#alerts" data-nav="alerts">Alerts</a>
+      <a href="#reports" data-nav="reports">Reports</a>
+      <a href="#settings" data-nav="settings">Settings</a>
+    </nav>
+    <div class="user" id="userLabel"></div>
+  </header>
+
+  <main class="page" id="main">
+
+    <!-- DASHBOARD -->
+    <div class="view" id="view-dashboard" hidden>
+      <h1 class="view-title">Dashboard</h1>
+      <p class="view-sub">A summary of how independent your AI tools are, and the cases that may need a closer look.</p>
+      <section class="cards" aria-label="Summary">
+        <div class="card"><div class="label">High-risk cases</div><div class="number">12</div><div class="meta">Suggested for manual review</div></div>
+        <div class="card"><div class="label">Shared blind spots</div><div class="number">5</div><div class="meta">Detected this month</div></div>
+        <div class="card"><div class="label">Independence score</div><div class="number">0.28</div><div class="meta">ToolA / ToolB pair, higher is better</div></div>
+        <div class="card"><div class="label">Cases monitored</div><div class="number">847</div><div class="meta">This month</div></div>
+      </section>
+
+      <section class="panel" aria-labelledby="alerts-title">
+        <div class="panel-title" id="alerts-title">Active alerts</div>
+        <div id="alerts"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">Illustrative pair independence score over time</div>
+        <div class="chart-sub">Higher means the two tools make more different mistakes. A falling score suggests more shared blind spots. Illustrative sample data for the ToolA / ToolB pair; the calculation is not clinically validated.</div>
+        <div class="chart" role="img" aria-label="Illustrative independence score for ToolA and ToolB fell from 0.45 in week 1 to 0.28 in week 6. Sample data; not clinically validated.">
+          <div class="bar" style="height: 90%;"><div class="bar-value">0.45</div><div class="bar-label">Week 1</div></div>
+          <div class="bar" style="height: 84%;"><div class="bar-value">0.42</div><div class="bar-label">Week 2</div></div>
+          <div class="bar" style="height: 78%;"><div class="bar-value">0.39</div><div class="bar-label">Week 3</div></div>
+          <div class="bar" style="height: 70%;"><div class="bar-value">0.35</div><div class="bar-label">Week 4</div></div>
+          <div class="bar" style="height: 62%;"><div class="bar-value">0.31</div><div class="bar-label">Week 5</div></div>
+          <div class="bar" style="height: 56%;"><div class="bar-value">0.28</div><div class="bar-label">Week 6</div></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">Review queue (showing 4 of 12)</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Case</th><th>Tool pair</th><th>Risk</th><th>Reason</th><th>Action</th></tr></thead>
+            <tbody id="queue"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-title">Audit log (this session)</div>
+        <ul id="audit"></ul>
+      </section>
+    </div>
+
+    <!-- CASES -->
+    <div class="view" id="view-cases" hidden>
+      <h1 class="view-title">Cases</h1>
+      <p class="view-sub">The six sample cases plus any records you enter. The dashboard totals are illustrative and are larger than this list. Search by case number, tool pair, or reason, or filter by risk.</p>
+      <section class="panel">
+        <div class="toolbar">
+          <div><label for="caseSearch">Search</label><input type="search" id="caseSearch" placeholder="Case number, tool, or reason" /></div>
+          <div><label for="caseRisk">Risk level</label>
+            <select id="caseRisk"><option value="all">All</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Case</th><th>Study</th><th>Tool pair</th><th>Risk</th><th>Reason</th><th>Action</th></tr></thead>
+            <tbody id="casesBody"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="casesEmpty" hidden>No cases match your search.</div>
+      </section>
+    </div>
+
+    <!-- RECORDS -->
+    <div class="view" id="view-records" hidden>
+      <h1 class="view-title">Records</h1>
+      <p class="view-sub">Enter a case and what each AI tool reported. TrustScan rates it, adds it to your Cases list, and counts shared misses across your records.</p>
+      <div class="notice"><strong>Use made-up data only.</strong> Do not enter real patient names, IDs, or images. Records stay in this browser and are not sent anywhere.</div>
+      <section class="panel">
+        <div class="panel-title">New record</div>
+        <form id="recForm" novalidate>
+          <div class="form-grid">
+            <div><label for="f-study">Study type</label><select id="f-study" name="study"><option>Brain MRI</option><option>Chest X-ray</option><option>Chest CT</option><option>Mammography</option><option>Other</option></select></div>
+            <div><label for="f-date">Study date</label><input type="date" id="f-date" name="date" required /></div>
+            <div><label for="f-age">Patient age</label><input type="number" id="f-age" name="age" min="0" max="120" required /></div>
+            <div><label for="f-sex">Sex</label><select id="f-sex" name="sex"><option>Not stated</option><option>Female</option><option>Male</option></select></div>
+            <div><label for="f-confirmed">Confirmed outcome</label><select id="f-confirmed" name="confirmed"><option value="unknown">Not yet known</option><option value="yes">Finding confirmed</option><option value="no">No finding confirmed</option></select></div>
+          </div>
+          <div id="toolRows"></div>
+          <div class="form-grid"><div style="grid-column: 1 / -1;"><label for="f-note">Note (optional)</label><input type="text" id="f-note" name="note" maxlength="200" /></div></div>
+          <div class="err" id="recErr" role="alert"></div>
+          <div class="settings-actions"><button type="submit" class="btn primary">Add record</button><button type="reset" class="btn secondary" data-act="rec-reset">Clear form</button></div>
+        </form>
+      </section>
+      <section class="panel">
+        <div class="panel-head"><div class="panel-title">Your records</div><div><button class="btn secondary" data-act="rec-export">Download CSV</button> <button class="btn secondary" data-act="rec-clear">Delete all</button></div></div>
+        <div class="table-scroll"><table><thead><tr><th>Case</th><th>Study</th><th>Tool results</th><th>Outcome</th><th>Risk</th><th>Action</th></tr></thead><tbody id="recBody"></tbody></table></div>
+        <div class="empty" id="recEmpty">No records yet. Add one above to see it rated here and in the Cases tab.</div>
+      </section>
+      <section class="panel">
+        <div class="panel-title">Shared misses in your records</div>
+        <div class="table-scroll"><table><thead><tr><th>Tool pair</th><th>Confirmed findings both ran on</th><th>Missed by at least one</th><th>Missed by both</th></tr></thead><tbody id="pairStats"></tbody></table></div>
+        <p class="meta" style="padding:10px 0 8px;">Counts use only records with a confirmed finding. A handful of records says very little; real monitoring needs many cases.</p>
+      </section>
+    </div>
+
+    <!-- TOOLS -->
+    <div class="view" id="view-tools" hidden>
+      <h1 class="view-title">Tools</h1>
+      <p class="view-sub">The AI tools being monitored, and how independent each pair is. The shared-miss rate is how often one tool misses a confirmed finding that the other also missed. All numbers are illustrative sample data, and the independence score is not clinically validated.</p>
+      <section class="panel">
+        <div class="panel-title">Monitored tools</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Tool</th><th>Used for</th><th>Sensitivity</th><th>Cases this month</th></tr></thead>
+            <tbody>
+              <tr><td>ToolA</td><td>Brain MRI, chest X-ray</td><td>0.89</td><td>612</td></tr>
+              <tr><td>ToolB</td><td>Brain MRI, chest X-ray</td><td>0.87</td><td>598</td></tr>
+              <tr><td>ToolC</td><td>Brain MRI, mammography</td><td>0.84</td><td>455</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section class="panel">
+        <div class="panel-title">Pair independence (illustrative)</div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Tool pair</th><th>Independence score</th><th>Shared-miss rate</th><th>Status</th></tr></thead>
+            <tbody id="pairsBody"></tbody>
+          </table>
+        </div>
+        <p class="meta" style="padding:10px 0 8px;">Status uses the shared-miss threshold from Settings.</p>
+      </section>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="view" id="view-alerts" hidden>
+      <h1 class="view-title">Alerts</h1>
+      <p class="view-sub">Every alert in the sample data, including ones you dismissed or that your alert settings are hiding from the dashboard.</p>
+      <section class="panel">
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Case</th><th>Alert</th><th>Risk</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="alertsBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="view" id="view-reports" hidden>
+      <h1 class="view-title">Reports</h1>
+      <p class="view-sub">Governance and quality reports. In this prototype only the audit log export is real; the other buttons show what a report request would look like.</p>
+      <section class="report-grid">
+        <div class="card"><div class="label">Monthly independence report</div><p>Pair independence scores and shared-miss rates for every monitored tool pair.</p><button class="btn primary" data-act="mockreport" data-name="Monthly independence report">Generate report</button></div>
+        <div class="card"><div class="label">Subgroup blind-spot report</div><p>Patient groups, anatomy types, and scan conditions where several tools underperform.</p><button class="btn primary" data-act="mockreport" data-name="Subgroup blind-spot report">Generate report</button></div>
+        <div class="card"><div class="label">Audit log export</div><p>Download every alert and action from this session as a CSV file.</p><button class="btn primary" data-act="export">Download CSV</button></div>
+      </section>
+      <section class="panel">
+        <div class="panel-title">Audit log (this session)</div>
+        <ul id="audit2"></ul>
+      </section>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="view" id="view-settings" hidden>
+      <h1 class="view-title">Settings</h1>
+      <p class="view-sub">Changes apply right away and are saved in this browser only.</p>
+      <div class="settings-grid">
+        <section class="panel">
+          <div class="panel-title">Profile</div>
+          <div class="field"><label for="s-displayName">Display name</label><input type="text" id="s-displayName" data-setting="displayName" maxlength="40" /></div>
+          <div class="field"><label for="s-department">Department</label><input type="text" id="s-department" data-setting="department" maxlength="40" /></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">Alerts</div>
+          <div class="field">
+            <label for="s-minRisk">Show alerts for</label>
+            <select id="s-minRisk" data-setting="minRisk">
+              <option value="high">High risk only</option>
+              <option value="medium">Medium risk and above</option>
+              <option value="low">All risk levels</option>
+            </select>
+            <div class="help">Hidden alerts stay in the Alerts tab.</div>
+          </div>
+          <div class="field">
+            <label for="s-missThreshold">Shared-miss threshold</label>
+            <div class="range-row"><input type="range" id="s-missThreshold" data-setting="missThreshold" min="20" max="80" step="5" /><output id="o-missThreshold" for="s-missThreshold"></output></div>
+            <div class="help">Alerts about a tool pair appear when their shared-miss rate is at least this high. Subgroup alerts always appear.</div>
+          </div>
+          <div class="field">
+            <label class="check"><input type="checkbox" id="s-emailHigh" data-setting="emailHigh" /><span>Email me when a high-risk alert appears<br /><span class="help">Mock setting. Nothing is sent in this prototype.</span></span></label>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">Display</div>
+          <div class="field"><label for="s-textSize">Text size</label>
+            <select id="s-textSize" data-setting="textSize"><option value="normal">Normal</option><option value="large">Large</option></select></div>
+          <div class="field"><label for="s-density">Layout density</label>
+            <select id="s-density" data-setting="density"><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></div>
+          <div class="field"><label for="s-timeFormat">Time format</label>
+            <select id="s-timeFormat" data-setting="timeFormat"><option value="12">12-hour</option><option value="24">24-hour</option></select></div>
+        </section>
+      </div>
+      <div class="settings-actions">
+        <button class="btn secondary" data-act="reset-settings">Reset to defaults</button>
+        <span class="save-note" id="saveNote"></span>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal" id="modal">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h2 id="modalTitle">Case detail</h2>
+        <button class="close" id="closeBtn" aria-label="Close case detail" data-act="close">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="footer">
+    TrustScan prototype v0.2 | Sample data only | Advisory monitoring, not a diagnostic device. Clinicians make all diagnostic decisions.<br />
+    Shared-miss rate: when one tool misses a confirmed finding, how often the other tool misses it too.
+  </div>
+
+  <script>
+    /* ---------- Data ---------- */
+    const VIEWS = ['dashboard', 'cases', 'records', 'tools', 'alerts', 'reports', 'settings'];
+    const VIEW_NAMES = { dashboard: 'Dashboard', cases: 'Cases', records: 'Records', tools: 'Tools', alerts: 'Alerts', reports: 'Reports', settings: 'Settings' };
+    const REASONS = ['Reviewed, no action needed', 'Already reviewed by a radiologist', 'Duplicate of another alert', 'Other (a note field would go here)'];
+    const RISK_RANK = { low: 0, medium: 1, high: 2 };
+    const RISK_LABEL = { high: 'High', medium: 'Medium', low: 'Low' };
+    const ALERT_IDS = ['184920', '184117', '183884'];
+    const QUEUE_IDS = ['184920', '184117', '183884', '183672'];
+    const PAIRS = [
+      { pair: 'ToolA / ToolB', score: 0.28, rate: 62 },
+      { pair: 'ToolB / ToolC', score: 0.39, rate: 41 },
+      { pair: 'ToolA / ToolC', score: 0.52, rate: 24 }
+    ];
+    const DEFAULTS = { displayName: 'Dr. Smith (sample user)', department: 'Radiology', minRisk: 'medium', missThreshold: 40, emailHigh: false, textSize: 'normal', density: 'comfortable', timeFormat: '12' };
+    const STORAGE_KEY = 'trustscan-prototype-settings';
+
+    let settings = Object.assign({}, DEFAULTS);
+    const dismissed = {};
+    const auditEntries = [];
+    let lastOpener = null;
+
+    const cases = {
+      '184920': {
+        risk: 'high', pair: 'ToolA / ToolB', reason: 'Shared-miss pattern', sharedMiss: 62,
+        alertTitle: 'Possible shared blind spot',
+        alertText: 'ToolA and ToolB both report no lesion with high confidence, but ToolC flags one. In this prototype sample, these two tools missed the same finding 62% of the time. Suggest a radiologist read before the report is finalized.',
+        title: 'Case #184920 - Brain MRI | High risk',
+        patient: '68-year-old female | Higher-risk group',
+        study: 'Brain MRI | 2026-10-05 14:32 UTC',
+        body: `
+          <div class="mini-label">AI tool outputs</div>
+          <div class="tool-output"><strong>ToolA:</strong> no_lesion_found | Confidence 0.93</div>
+          <div class="tool-output"><strong>ToolB:</strong> no_lesion_found | Confidence 0.90</div>
+          <div class="tool-output flag"><strong>ToolC:</strong> lesion_suspected | Confidence 0.55 | Region flagged</div>
+
+          <div class="mini-label">Why this was flagged</div>
+          <ul>
+            <li>ToolA and ToolB agree with high confidence, which would normally look like a safe second opinion.</li>
+            <li>In this prototype sample, the shared-miss rate is <strong>62%</strong>: when one misses a confirmed finding, the other misses it too.</li>
+            <li>ToolC, which is built differently, disagrees. That disagreement is the warning sign.</li>
+          </ul>
+
+          <div class="mini-label">Suggested next step</div>
+          <p class="rec">Consider a radiologist read before the report is finalized. The two agreeing tools may not be giving independent opinions on this type of study. The clinician decides.</p>
+
+          <div class="case-actions">
+            <button class="btn primary" data-act="log" data-text="Case #184920: second read requested">Request second read</button>
+            <button class="btn primary" data-act="log" data-text="Case #184920: flagged for quality audit">Flag for quality audit</button>
+            <button class="btn secondary" data-act="log" data-text="Case #184920: alert acknowledged, no action">Acknowledge, no action</button>
+          </div>`
+      },
+      '184117': {
+        risk: 'medium', pair: 'ToolB / ToolC', reason: 'Agreement on low-quality scan', sharedMiss: 41,
+        alertTitle: 'Agreement on a low-quality scan',
+        alertText: 'ToolB and ToolC both report a possible opacity with low confidence on a degraded chest X-ray. Their agreement may reflect a shared weakness, not a reliable finding. Consider a quality check.',
+        title: 'Case #184117 - Chest X-ray | Medium risk',
+        patient: '52-year-old male | Standard risk',
+        study: 'Chest X-ray | 2026-10-04 10:15 UTC',
+        body: `
+          <div class="mini-label">AI tool outputs</div>
+          <div class="tool-output"><strong>ToolB:</strong> opacity_detected | Confidence 0.42 | Low-quality scan</div>
+          <div class="tool-output"><strong>ToolC:</strong> opacity_possible | Confidence 0.39 | Low-quality scan</div>
+          <div class="tool-output"><strong>ToolA:</strong> normal | Confidence 0.51 | Inconclusive</div>
+
+          <div class="mini-label">Interpretation</div>
+          <ul>
+            <li>ToolB and ToolC agree, but the image quality is degraded.</li>
+            <li>The agreement may reflect a shared weakness on low-quality scans rather than a reliable finding.</li>
+          </ul>
+
+          <div class="mini-label">Suggested next step</div>
+          <p class="rec">Consider additional review when confidence is low and scan quality is degraded.</p>
+          <div class="case-actions">
+            <button class="btn primary" data-act="log" data-text="Case #184117: sent for quality check">Send for quality check</button>
+          </div>`
+      },
+      '183884': {
+        risk: 'medium', pair: 'All tools', reason: 'Subgroup blind spot', sharedMiss: null,
+        alertTitle: 'Possible subgroup blind spot',
+        alertText: 'In this prototype sample, all three tools missed more findings in women aged 65+ (false-negative rate 18% vs 8% overall), a possible subgroup blind spot. Suggest a quality review of this subgroup.',
+        title: 'Case #183884 - Mammography | Medium risk',
+        patient: '71-year-old female | Higher-risk group',
+        study: 'Mammography | 2026-10-03 09:00 UTC',
+        body: `
+          <div class="mini-label">Demographic pattern</div>
+          <ul>
+            <li>All AI tools showed reduced sensitivity for female patients aged 65+.</li>
+            <li>The false-negative rate was 18% in this group, compared with 8% overall.</li>
+            <li>This prototype sample suggests a possible subgroup blind spot, not a confirmed clinical finding.</li>
+          </ul>
+
+          <div class="mini-label">Suggested next step</div>
+          <p class="rec">Consider a quality review of this subgroup and secondary review of borderline cases.</p>
+          <div class="case-actions">
+            <button class="btn primary" data-act="log" data-text="Case #183884: subgroup quality review requested">Request subgroup review</button>
+          </div>`
+      },
+      '183672': {
+        risk: 'medium', pair: 'ToolA / ToolC', reason: 'High-confidence edge case', sharedMiss: null,
+        title: 'Case #183672 - Brain MRI | Medium risk',
+        patient: '45-year-old male | Standard risk',
+        study: 'Brain MRI with contrast | 2026-10-02 16:30 UTC',
+        body: `
+          <div class="mini-label">AI tool outputs</div>
+          <div class="tool-output"><strong>ToolA:</strong> lesion_probable | Confidence 0.73</div>
+          <div class="tool-output"><strong>ToolC:</strong> lesion_probable | Confidence 0.71</div>
+          <div class="tool-output"><strong>ToolB:</strong> normal | Confidence 0.52</div>
+
+          <div class="mini-label">Interpretation</div>
+          <ul>
+            <li>Two tools agree on a possible lesion, but this is an edge case with unclear boundaries.</li>
+            <li>Their agreement is not yet enough to treat this as a trusted consensus.</li>
+          </ul>
+
+          <div class="mini-label">Suggested next step</div>
+          <p class="rec">A radiologist read can tell a true lesion from a false positive or an imaging artifact.</p>
+          <div class="case-actions">
+            <button class="btn primary" data-act="log" data-text="Case #183672: radiologist read requested">Request radiologist read</button>
+          </div>`
+      },
+      '183410': {
+        risk: 'low', pair: 'ToolA / ToolB', reason: 'Routine agreement', sharedMiss: null,
+        title: 'Case #183410 - Chest CT | Low risk',
+        patient: '59-year-old male | Standard risk',
+        study: 'Chest CT | 2026-10-01 11:20 UTC',
+        body: `
+          <div class="mini-label">AI tool outputs</div>
+          <div class="tool-output"><strong>ToolA:</strong> normal | Confidence 0.96</div>
+          <div class="tool-output"><strong>ToolB:</strong> normal | Confidence 0.95</div>
+          <div class="tool-output"><strong>ToolC:</strong> normal | Confidence 0.92</div>
+          <div class="mini-label">Interpretation</div>
+          <ul><li>All three tools agree with high confidence on a study type where this pair has a low shared-miss rate. No action suggested.</li></ul>`
+      },
+      '183102': {
+        risk: 'low', pair: 'ToolB / ToolC', reason: 'Routine agreement', sharedMiss: null,
+        title: 'Case #183102 - Mammography | Low risk',
+        patient: '48-year-old female | Standard risk',
+        study: 'Mammography | 2026-09-30 15:05 UTC',
+        body: `
+          <div class="mini-label">AI tool outputs</div>
+          <div class="tool-output"><strong>ToolB:</strong> no_finding | Confidence 0.91</div>
+          <div class="tool-output"><strong>ToolC:</strong> no_finding | Confidence 0.89</div>
+          <div class="mini-label">Interpretation</div>
+          <ul><li>Both tools agree, and this pair's shared-miss rate for mammography is low. No action suggested.</li></ul>`
+      }
+    };
+    const SAMPLE_IDS = Object.keys(cases);
+    let ALL_IDS = SAMPLE_IDS.slice();
+
+    /* ---------- Helpers ---------- */
+    const $ = (id) => document.getElementById(id);
+
+    function toast(msg) {
+      const t = $('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => t.classList.remove('show'), 2600);
+    }
+
+    function badge(risk) { return `<span class="badge ${risk}">${RISK_LABEL[risk]}</span>`; }
+
+    function alertVisible(id) {
+      const c = cases[id];
+      if (RISK_RANK[c.risk] < RISK_RANK[settings.minRisk]) return false;
+      if (c.sharedMiss != null && c.sharedMiss < settings.missThreshold) return false;
+      return true;
+    }
+
+    /* ---------- Settings ---------- */
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) settings = Object.assign({}, DEFAULTS, JSON.parse(raw));
+      } catch (e) { /* storage unavailable: use defaults */ }
+    }
+    function saveSettings() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); $('saveNote').textContent = 'Saved in this browser.'; }
+      catch (e) { $('saveNote').textContent = 'Could not save here. Changes last until you close the page.'; }
+    }
+    function fillSettingsForm() {
+      document.querySelectorAll('[data-setting]').forEach((el) => {
+        const v = settings[el.dataset.setting];
+        if (el.type === 'checkbox') el.checked = !!v; else el.value = v;
+      });
+      $('o-missThreshold').textContent = settings.missThreshold + '%';
+    }
+    function applyDisplay() {
+      document.body.classList.toggle('large', settings.textSize === 'large');
+      document.body.classList.toggle('compact', settings.density === 'compact');
+      $('userLabel').textContent = settings.displayName + ' | ' + settings.department;
+    }
+
+
+    /* ---------- Records ---------- */
+    const TOOLS = ['ToolA', 'ToolB', 'ToolC'];
+    const REC_KEY = 'trustscan-prototype-records';
+    let records = [];
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const resTxt = (o) => (o.r === 'none' ? 'no_finding' : 'finding_flagged') + ' | Confidence ' + o.c.toFixed(2);
+
+    function assess(rec) {
+      const run = TOOLS.filter((t) => rec.out[t]);
+      const miss = run.filter((t) => rec.out[t].r === 'none');
+      const flag = run.filter((t) => rec.out[t].r === 'flag');
+      const avg = run.reduce((s, t) => s + rec.out[t].c, 0) / run.length;
+      if (rec.confirmed === 'yes' && miss.length >= 2) return { risk: 'high', reason: 'Shared miss on confirmed finding', pair: miss.slice(0, 2).join(' / ') };
+      if (miss.length >= 2 && flag.length >= 1) return { risk: 'high', reason: 'Agreement contradicted by another tool', pair: miss.slice(0, 2).join(' / ') };
+      if (miss.length && flag.length) return { risk: 'medium', reason: 'Tools disagree', pair: run.slice(0, 2).join(' / ') };
+      if (avg < 0.5) return { risk: 'medium', reason: 'Low-confidence agreement', pair: run.slice(0, 2).join(' / ') };
+      return { risk: 'low', reason: 'Routine agreement', pair: run.slice(0, 2).join(' / ') };
+    }
+
+    function buildCase(rec) {
+      const a = assess(rec);
+      const outs = TOOLS.filter((t) => rec.out[t]).map((t) => `<div class="tool-output${rec.out[t].r === 'flag' ? ' flag' : ''}"><strong>${t}:</strong> ${resTxt(rec.out[t])}</div>`).join('');
+      const outcome = { yes: 'Finding confirmed', no: 'No finding confirmed', unknown: 'Not yet known' }[rec.confirmed];
+      const next = a.risk === 'low' ? 'No action suggested.' : 'Consider a radiologist read. Tool agreement may not mean independent opinions on this type of study. The clinician decides.';
+      return Object.assign({ sharedMiss: null, user: true,
+        title: `Case #${rec.id} - ${esc(rec.study)} | ${RISK_LABEL[a.risk]} risk`,
+        patient: `${rec.age}-year-old, ${esc(rec.sex.toLowerCase())} | Entered record`,
+        study: `${esc(rec.study)} | ${esc(rec.date)}`,
+        body: `<div class="mini-label">AI tool outputs</div>${outs}
+          <div class="mini-label">Details</div><ul><li>Confirmed outcome: ${outcome}</li><li>Rated ${RISK_LABEL[a.risk].toLowerCase()} because: ${a.reason.toLowerCase()}</li>${rec.note ? `<li>Note: ${esc(rec.note)}</li>` : ''}</ul>
+          <div class="mini-label">Suggested next step</div><p class="rec">${next}</p>
+          <div class="case-actions"><button class="btn primary" data-act="log" data-text="Case #${rec.id}: marked as reviewed">Mark as reviewed</button></div>` }, a);
+    }
+
+    function syncRecords() {
+      records.forEach((r) => { cases[r.id] = buildCase(r); });
+      ALL_IDS = records.slice().reverse().map((r) => r.id).concat(SAMPLE_IDS);
+    }
+    function loadRecords() {
+      try { const raw = localStorage.getItem(REC_KEY); if (raw) records = JSON.parse(raw).filter((r) => r && r.id && r.out); } catch (e) { records = []; }
+      syncRecords();
+    }
+    function saveRecords() {
+      try { localStorage.setItem(REC_KEY, JSON.stringify(records)); } catch (e) { toast('Could not save here. Records last until you close the page.'); }
+    }
+
+    function renderRecords() {
+      $('recEmpty').hidden = records.length > 0;
+      $('recBody').innerHTML = records.slice().reverse().map((r) => {
+        const c = cases[r.id];
+        const res = TOOLS.filter((t) => r.out[t]).map((t) => `${t}: ${r.out[t].r === 'none' ? 'no finding' : 'flagged'}`).join(', ');
+        const oc = { yes: 'Confirmed', no: 'None confirmed', unknown: 'Unknown' }[r.confirmed];
+        return `<tr><td>#${r.id}</td><td>${esc(r.study)}<br><span class="meta">${esc(r.date)}</span></td><td>${res}</td><td>${oc}</td><td>${badge(c.risk)}</td>
+          <td><button class="btn primary" data-act="open" data-id="${r.id}">Open</button> <button class="btn secondary" data-act="rec-delete" data-id="${r.id}" aria-label="Delete record ${r.id}">Delete</button></td></tr>`;
+      }).join('');
+      const rows = [];
+      for (let i = 0; i < TOOLS.length; i++) for (let j = i + 1; j < TOOLS.length; j++) {
+        const [a, b] = [TOOLS[i], TOOLS[j]];
+        const set = records.filter((r) => r.confirmed === 'yes' && r.out[a] && r.out[b]);
+        const either = set.filter((r) => r.out[a].r === 'none' || r.out[b].r === 'none').length;
+        const both = set.filter((r) => r.out[a].r === 'none' && r.out[b].r === 'none').length;
+        rows.push(`<tr><td>${a} / ${b}</td><td>${set.length}</td><td>${either}</td><td>${both}</td></tr>`);
+      }
+      $('pairStats').innerHTML = rows.join('');
+    }
+
+    function initRecordForm() {
+      $('toolRows').innerHTML = TOOLS.map((t) => `<fieldset class="tool-row"><legend>${t}</legend><div class="form-grid">
+        <div><label for="r${t}">Result</label><select id="r${t}" name="r${t}"><option value="">Not run</option><option value="none">No finding</option><option value="flag">Finding flagged</option></select></div>
+        <div><label for="c${t}">Confidence (0 to 1)</label><input type="number" id="c${t}" name="c${t}" min="0" max="1" step="0.01" /></div></div></fieldset>`).join('');
+      $('f-date').value = new Date().toISOString().slice(0, 10);
+    }
+
+    function addRecord(f) {
+      const E = f.elements;
+      const err = $('recErr');
+      const age = E.age.value.trim() === '' ? NaN : Number(E.age.value);
+      if (!E.date.value) { err.textContent = 'Enter the study date.'; E.date.focus(); return; }
+      if (!(age >= 0 && age <= 120)) { err.textContent = 'Enter an age from 0 to 120.'; E.age.focus(); return; }
+      const out = {};
+      for (const t of TOOLS) {
+        const r = E['r' + t].value, c = E['c' + t].value;
+        if (!r) continue;
+        if (c === '' || !(Number(c) >= 0 && Number(c) <= 1)) { err.textContent = `Enter a confidence from 0 to 1 for ${t}.`; E['c' + t].focus(); return; }
+        out[t] = { r, c: Number(c) };
+      }
+      if (Object.keys(out).length < 2) { err.textContent = 'Enter results for at least two tools. Independence needs a pair to compare.'; return; }
+      err.textContent = '';
+      const id = String(records.reduce((m, r) => Math.max(m, Number(r.id)), 190000) + 1);
+      const rec = { id, study: E.study.value, date: E.date.value, age: Math.round(age), sex: E.sex.value, confirmed: E.confirmed.value, out, note: E.note.value.trim() };
+      records.push(rec);
+      syncRecords(); saveRecords();
+      logAction(`Record #${id} added (${RISK_LABEL[cases[id].risk]} risk: ${cases[id].reason})`);
+      f.reset(); $('f-date').value = new Date().toISOString().slice(0, 10);
+      refreshAll();
+    }
+
+    function exportRecords() {
+      if (!records.length) { toast('No records to download yet.'); return; }
+      const q = (c) => '"' + String(c).replace(/"/g, '""') + '"';
+      const head = ['case', 'study', 'date', 'age', 'sex', 'confirmed'].concat(...TOOLS.map((t) => [t + '_result', t + '_confidence']), ['risk', 'reason', 'note']);
+      const rows = records.map((r) => [r.id, r.study, r.date, r.age, r.sex, r.confirmed].concat(...TOOLS.map((t) => r.out[t] ? [r.out[t].r === 'none' ? 'no_finding' : 'finding_flagged', r.out[t].c] : ['', '']), [cases[r.id].risk, cases[r.id].reason, r.note]));
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([[head].concat(rows).map((r) => r.map(q).join(',')).join('\n')], { type: 'text/csv' }));
+      a.download = 'trustscan-records.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      toast('Records downloaded');
+    }
+
+    /* ---------- Rendering ---------- */
+    function renderAlerts() {
+      const box = $('alerts');
+      box.innerHTML = '';
+      const ids = ALERT_IDS.filter(alertVisible);
+      if (!ids.length) {
+        box.innerHTML = '<div class="empty">No alerts match your alert settings. Hidden alerts are still listed in the Alerts tab.</div>';
+        return;
+      }
+      ids.forEach((id) => {
+        const c = cases[id];
+        const el = document.createElement('div');
+        el.id = 'alert-' + id;
+        el.dataset.id = id;
+        if (dismissed[id]) {
+          el.className = 'alert dismissed';
+          el.innerHTML = `<div>Case #${id} dismissed. Reason: ${dismissed[id]}. Logged in the audit trail.</div>
+            <button class="btn secondary" data-act="undo" data-id="${id}">Undo</button>`;
+        } else {
+          el.className = 'alert' + (c.risk === 'high' ? '' : ' warn');
+          const opts = REASONS.map((r) => `<option>${r}</option>`).join('');
+          el.innerHTML = `
+            <div class="alert-icon" aria-hidden="true">!</div>
+            <div class="alert-body">
+              <div class="alert-title">Case #${id} - ${c.alertTitle}</div>
+              <div class="alert-text">${c.alertText}</div>
+              <div class="dismiss-panel" hidden>
+                <label for="reason-${id}">Reason for dismissing</label>
+                <select id="reason-${id}">${opts}</select>
+                <button class="btn primary" data-act="confirm-dismiss" data-id="${id}">Confirm dismiss</button>
+                <button class="btn secondary" data-act="cancel-dismiss">Cancel</button>
+              </div>
+            </div>
+            <div class="alert-actions">
+              <button class="btn primary" data-act="open" data-id="${id}">Review case</button>
+              <button class="btn secondary" data-act="start-dismiss">Dismiss</button>
+            </div>`;
+        }
+        box.appendChild(el);
+      });
+    }
+
+    function renderQueue() {
+      $('queue').innerHTML = QUEUE_IDS.map((id) => {
+        const c = cases[id];
+        return `<tr><td>#${id}</td><td>${c.pair}</td><td>${badge(c.risk)}</td><td>${c.reason}</td>
+          <td><button class="btn primary" data-act="open" data-id="${id}">Review</button></td></tr>`;
+      }).join('');
+    }
+
+    function renderCases() {
+      const q = $('caseSearch').value.trim().toLowerCase();
+      const risk = $('caseRisk').value;
+      const rows = ALL_IDS.filter((id) => {
+        const c = cases[id];
+        if (risk !== 'all' && c.risk !== risk) return false;
+        if (!q) return true;
+        return (id + ' ' + c.pair + ' ' + c.reason + ' ' + c.study).toLowerCase().includes(q.replace('#', ''));
+      });
+      $('casesBody').innerHTML = rows.map((id) => {
+        const c = cases[id];
+        return `<tr><td>#${id}</td><td>${c.study.split(' | ')[0]}</td><td>${c.pair}</td><td>${badge(c.risk)}</td><td>${c.reason}</td>
+          <td><button class="btn primary" data-act="open" data-id="${id}">Open</button></td></tr>`;
+      }).join('');
+      $('casesEmpty').hidden = rows.length > 0;
+    }
+
+    function renderTools() {
+      $('pairsBody').innerHTML = PAIRS.map((p) => {
+        const review = p.rate >= settings.missThreshold;
+        return `<tr><td>${p.pair}</td><td>${p.score.toFixed(2)}</td><td>${p.rate}%</td>
+          <td><span class="badge ${review ? 'high' : 'ok'}">${review ? 'Review suggested' : 'OK'}</span></td></tr>`;
+      }).join('');
+    }
+
+    function renderAlertsView() {
+      $('alertsBody').innerHTML = ALERT_IDS.map((id) => {
+        const c = cases[id];
+        let status, action;
+        if (dismissed[id]) { status = 'Dismissed: ' + dismissed[id]; action = `<button class="btn secondary" data-act="undo" data-id="${id}">Restore</button>`; }
+        else if (!alertVisible(id)) { status = 'Hidden by your alert settings'; action = `<button class="btn secondary" data-act="open" data-id="${id}">View case</button>`; }
+        else { status = 'Open'; action = `<button class="btn primary" data-act="open" data-id="${id}">Review case</button>`; }
+        return `<tr><td>#${id}</td><td>${c.alertTitle}</td><td>${badge(c.risk)}</td><td>${status}</td><td>${action}</td></tr>`;
+      }).join('');
+    }
+
+    function renderAudit() {
+      ['audit', 'audit2'].forEach((listId) => {
+        const ul = $(listId);
+        ul.innerHTML = '';
+        if (!auditEntries.length) {
+          ul.innerHTML = '<li>No actions yet. Dismissing an alert or using a case action adds an entry here.</li>';
+          return;
+        }
+        auditEntries.forEach((e) => {
+          const li = document.createElement('li');
+          const s = document.createElement('span');
+          s.className = 'audit-time';
+          s.textContent = e.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: settings.timeFormat === '12' });
+          li.appendChild(s);
+          li.appendChild(document.createTextNode(e.text));
+          ul.appendChild(li);
+        });
+      });
+    }
+
+    function refreshAll() {
+      applyDisplay();
+      renderAlerts();
+      renderQueue();
+      renderCases();
+      renderRecords();
+      renderTools();
+      renderAlertsView();
+      renderAudit();
+    }
+
+    function logAction(text) {
+      auditEntries.unshift({ date: new Date(), text });
+      renderAudit();
+      toast('Logged: ' + text);
+    }
+
+    function exportAudit() {
+      if (!auditEntries.length) { toast('No actions logged yet.'); return; }
+      const rows = [['time', 'action']].concat(auditEntries.slice().reverse().map((e) => [e.date.toISOString(), e.text]));
+      const csv = rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(',')).join('\n');
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+      a.download = 'trustscan-audit-log.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      toast('Audit log downloaded');
+    }
+
+    /* ---------- Tab switching ---------- */
+    function showView(name, moveFocus) {
+      if (!VIEWS.includes(name)) name = 'dashboard';
+      VIEWS.forEach((v) => { $('view-' + v).hidden = v !== name; });
+      document.querySelectorAll('[data-nav]').forEach((a) => {
+        if (a.dataset.nav === name) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      });
+      document.title = 'TrustScan | ' + VIEW_NAMES[name];
+      if (moveFocus) {
+        const h = $('view-' + name).querySelector('.view-title');
+        h.tabIndex = -1;
+        h.focus({ preventScroll: true });
+        window.scrollTo(0, 0);
+      }
+    }
+    window.addEventListener('hashchange', () => showView(location.hash.slice(1), true));
+
+    /* ---------- Case modal ---------- */
+    function openCase(id, opener) {
+      const c = cases[id];
+      if (!c) return;
+      lastOpener = opener || null;
+      $('modalTitle').textContent = c.title;
+      $('modalBody').innerHTML = `
+        <div style="margin-bottom:14px; font-size:13px; color:#555; line-height:1.6;">
+          <div><strong>Patient:</strong> ${c.patient}</div>
+          <div><strong>Study:</strong> ${c.study}</div>
+        </div>${c.body}`;
+      $('modal').classList.add('open');
+      $('closeBtn').focus();
+    }
+    function closeCase() {
+      $('modal').classList.remove('open');
+      if (lastOpener && document.body.contains(lastOpener)) lastOpener.focus();
+    }
+
+    /* ---------- Events ---------- */
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-act]');
+      if (btn) {
+        const act = btn.dataset.act, id = btn.dataset.id;
+        if (act === 'open') { openCase(id, btn); return; }
+        if (act === 'close') { closeCase(); return; }
+        if (act === 'log') { logAction(btn.dataset.text); return; }
+        if (act === 'mockreport') { logAction(btn.dataset.name + ' requested (mock, nothing generated)'); return; }
+        if (act === 'export') { exportAudit(); return; }
+        if (act === 'rec-export') { exportRecords(); return; }
+        if (act === 'rec-reset') { $('recErr').textContent = ''; return; }
+        if (act === 'rec-delete') { records = records.filter((r) => r.id !== id); delete cases[id]; syncRecords(); saveRecords(); logAction('Record #' + id + ' deleted'); refreshAll(); return; }
+        if (act === 'rec-clear') {
+          if (!records.length) { toast('No records to delete.'); return; }
+          if (!confirm('Delete all ' + records.length + ' records from this browser?')) return;
+          records.forEach((r) => delete cases[r.id]); records = []; syncRecords(); saveRecords(); logAction('All records deleted'); refreshAll(); return;
+        }
+        if (act === 'reset-settings') { settings = Object.assign({}, DEFAULTS); saveSettings(); fillSettingsForm(); refreshAll(); toast('Settings reset to defaults'); return; }
+        if (act === 'start-dismiss') { const a = btn.closest('.alert'); a.querySelector('.dismiss-panel').hidden = false; a.querySelector('select').focus(); return; }
+        if (act === 'cancel-dismiss') { btn.closest('.dismiss-panel').hidden = true; return; }
+        if (act === 'confirm-dismiss') {
+          const reason = $('reason-' + id).value;
+          dismissed[id] = reason;
+          logAction('Case #' + id + ' alert dismissed. Reason: ' + reason);
+          renderAlerts(); renderAlertsView();
+          return;
+        }
+        if (act === 'undo') { delete dismissed[id]; logAction('Case #' + id + ' alert restored'); renderAlerts(); renderAlertsView(); return; }
+      }
+      if (e.target === $('modal')) { closeCase(); return; }
+      const alertEl = e.target.closest('#alerts .alert');
+      if (alertEl && !alertEl.classList.contains('dismissed') && !e.target.closest('button, select, label')) openCase(alertEl.dataset.id, alertEl.querySelector('[data-act="open"]'));
+    });
+
+    document.addEventListener('input', (e) => {
+      const el = e.target;
+      if (el.id === 'caseSearch' || el.id === 'caseRisk') { renderCases(); return; }
+      const key = el.dataset && el.dataset.setting;
+      if (!key) return;
+      settings[key] = el.type === 'checkbox' ? el.checked : el.type === 'range' ? Number(el.value) : el.value;
+      if (key === 'displayName' && !settings[key].trim()) settings[key] = DEFAULTS.displayName;
+      if (key === 'missThreshold') $('o-missThreshold').textContent = settings[key] + '%';
+      saveSettings();
+      refreshAll();
+      if (el.type !== 'text') toast('Settings saved');
+    });
+    document.addEventListener('change', (e) => {
+      if (e.target.dataset && e.target.dataset.setting && e.target.type === 'text') toast('Settings saved');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (!$('modal').classList.contains('open')) return;
+      if (e.key === 'Escape') { closeCase(); return; }
+      if (e.key === 'Tab') {
+        const f = $('modal').querySelectorAll('button');
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    });
+
+    $('recForm').addEventListener('submit', (e) => { e.preventDefault(); addRecord(e.target); });
+
+    /* ---------- Start ---------- */
+    initRecordForm();
+    loadRecords();
+    loadSettings();
+    fillSettingsForm();
+    refreshAll();
+    showView(location.hash.slice(1), false);
+  </script>
+</body>
+</html>

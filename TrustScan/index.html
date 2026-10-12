@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="TrustScan checks whether a hospital's AI imaging tools are truly independent, or share blind spots and miss the same finding together. Concept-stage project." />
+  <title>TrustScan | Verify true second opinions</title>
+  <style>
+    :root {
+      --navy: #0e2a3f; --navy-2: #173d57; --green: #1a472a; --green-2: #2a6d48;
+      --soft: #eef7f2; --paper: #ffffff; --text: #1f2933; --muted: #52606d; --line: #e2e8f0; --accent: #dfeee8;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 70px; }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+    .skip { position: absolute; left: -999px; top: 8px; background: #fff; color: var(--navy); padding: 8px 14px; border-radius: 6px; z-index: 10; }
+    .skip:focus { left: 8px; }
+    .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; counter-reset: s; }
+    .steps li { counter-increment: s; background: white; border: 1px solid var(--line); border-radius: 16px; padding: 22px 20px; margin: 0; color: var(--muted); font-size: 15px; line-height: 1.7; }
+    .steps li::before { content: counter(s); display: flex; width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: 50%; background: var(--green); color: #fff; font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+    .steps strong { display: block; color: var(--navy); font-size: 18px; margin-bottom: 6px; }
+    .section-title { font-size: 28px; color: var(--navy); margin: 0 0 18px; letter-spacing: -0.03em; }
+    header { position: sticky; top: 0; z-index: 5; }
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; color: var(--text); background: linear-gradient(180deg, #f4f8f6 0%, #edf2f1 100%); }
+    :focus-visible { outline: 3px solid #2f80ed; outline-offset: 2px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    header { background: linear-gradient(90deg, var(--navy), var(--navy-2)); color: white; padding: 18px 0; }
+    .nav { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+    .brand { font-size: 28px; font-weight: 700; letter-spacing: -0.04em; }
+    .nav-links { display: flex; gap: 18px; font-size: 14px; }
+    .nav-links a { color: white; text-decoration: none; }
+    .nav-links a:hover { text-decoration: underline; }
+    .hero { padding: 80px 0 60px; }
+    .hero-grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 40px; align-items: center; }
+    .eyebrow { display: inline-block; background: var(--accent); color: var(--green); font-weight: 700; font-size: 13px; border-radius: 999px; padding: 8px 14px; margin-bottom: 18px; }
+    h1 { font-size: clamp(2.3rem, 4vw, 4.5rem); line-height: 1.05; margin: 0 0 18px; letter-spacing: -0.05em; color: var(--navy); }
+    .sub { font-size: 20px; color: var(--muted); line-height: 1.6; max-width: 700px; margin-bottom: 28px; }
+    .cta-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 26px; }
+    .primary-btn, .secondary-btn { text-decoration: none; border-radius: 8px; padding: 15px 24px; font-weight: 700; font-size: 15px; display: inline-block; }
+    .primary-btn { background: var(--green); color: white; box-shadow: 0 8px 20px rgba(26,71,42,0.18); }
+    .secondary-btn { border: 1px solid #c5d0da; background: rgba(255,255,255,0.7); color: var(--navy); }
+    .mini-note { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+    .hero-card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 24px; box-shadow: 0 18px 30px rgba(15,32,40,0.06); }
+    .score { display: flex; justify-content: space-between; align-items: center; background: var(--soft); border-radius: 12px; padding: 18px 16px; margin-bottom: 14px; border: 1px solid #dfeae3; }
+    .score-label { font-size: 13px; font-weight: 700; color: var(--green); }
+    .score-pair { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .score-value { font-size: 34px; font-weight: 800; color: var(--green); letter-spacing: -0.05em; }
+    .chart-caption { font-size: 13px; color: var(--muted); margin-bottom: 30px; line-height: 1.5; }
+    .chart { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; height: 160px; align-items: end; }
+    .bar { background: linear-gradient(to top, var(--green), var(--green-2)); border-radius: 8px 8px 0 0; position: relative; }
+    .bar span { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); font-size: 11px; font-weight: 700; color: var(--green); }
+    .bar em { position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); font-size: 11px; font-style: normal; color: var(--muted); white-space: nowrap; }
+    .chart-wrap { padding-bottom: 28px; }
+
+    .section { padding: 80px 0 20px; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    .feature { background: white; border: 1px solid var(--line); border-radius: 16px; padding: 24px 20px; box-shadow: 0 10px 20px rgba(15,32,40,0.04); }
+    .feature h2 { margin: 0 0 12px; font-size: 22px; color: var(--navy); }
+    .feature p { margin: 0; color: var(--muted); line-height: 1.7; font-size: 15px; }
+    .stats { padding-top: 30px; }
+    .section-note { max-width: 760px; color: var(--muted); line-height: 1.6; font-size: 15px; margin: 0 0 22px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .stat-box { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 24px 18px; text-align: center; }
+    .stat-number { font-size: 32px; font-weight: 800; color: var(--green); letter-spacing: -0.04em; margin-bottom: 8px; }
+    .stat-box p { margin: 0 0 10px; color: var(--text); line-height: 1.5; font-size: 14px; }
+    .stat-box .src { font-size: 12px; color: var(--muted); margin: 0; }
+    .caveat { margin-top: 22px; background: #fff7ea; border: 1px solid #f0d9a8; border-radius: 12px; padding: 16px 18px; font-size: 14px; color: #5c4200; line-height: 1.6; }
+    footer { padding: 50px 0 80px; text-align: center; color: var(--muted); font-size: 14px; line-height: 1.7; }
+    footer a { color: var(--green); }
+    @media (max-width: 900px) {
+      .hero-grid, .grid, .stats-grid, .steps { grid-template-columns: 1fr; }
+      .nav { flex-direction: column; align-items: flex-start; }
+      .hero { padding-top: 50px; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header>
+    <div class="container nav">
+      <div class="brand">TrustScan</div>
+      <nav class="nav-links" aria-label="Main">
+        <a href="#problem">Problem</a>
+        <a href="#solution">Solution</a>
+        <a href="#how">How it works</a>
+        <a href="#impact">Evidence</a>
+        <a href="prototype.html">Prototype</a>
+        <a href="prototype.html#records">Enter records</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow">Healthcare AI safety</div>
+          <h1>Verify true second opinions.</h1>
+          <div class="sub">
+            A hospital that runs several AI tools on the same scan may assume they give independent second opinions. Tools built on similar data or models can share blind spots and miss the same finding. TrustScan checks whether AI agreement can be trusted.
+          </div>
+          <div class="cta-row">
+            <a href="prototype.html" class="primary-btn">Try the dashboard prototype</a>
+            <a href="prototype.html#records" class="secondary-btn">Enter your own records</a>
+          </div>
+          <div class="mini-note">Advisory monitoring for clinical governance. TrustScan flags cases for review; clinicians make every diagnostic decision.</div>
+        </div>
+
+        <div class="hero-card">
+          <div class="score">
+            <div>
+              <div class="score-label">Illustrative independence score</div>
+              <div class="score-pair">ToolA / ToolB pair</div>
+            </div>
+            <div class="score-value">0.28</div>
+          </div>
+          <div class="chart-caption">Illustrative sample data, weeks 1 to 6; not clinically validated. Higher means the tools make more different mistakes. A falling score suggests more shared blind spots.</div>
+          <div class="chart-wrap">
+            <div class="chart" role="img" aria-label="Illustrative sample data: the independence score for one tool pair fell from 0.45 in week 1 to 0.28 in week 6.">
+              <div class="bar" style="height: 90%;"><span>0.45</span><em>Wk 1</em></div>
+              <div class="bar" style="height: 84%;"><span>0.42</span><em>Wk 2</em></div>
+              <div class="bar" style="height: 78%;"><span>0.39</span><em>Wk 3</em></div>
+              <div class="bar" style="height: 70%;"><span>0.35</span><em>Wk 4</em></div>
+              <div class="bar" style="height: 62%;"><span>0.31</span><em>Wk 5</em></div>
+              <div class="bar" style="height: 56%;"><span>0.28</span><em>Wk 6</em></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="problem" class="section">
+      <div class="container">
+        <div class="grid">
+          <div class="feature">
+            <h2>The problem</h2>
+            <p>When a hospital layers multiple AI tools on the same scans, it may treat each one as an independent second opinion. But tools can share model families, training data, and vendor pipelines, and with them, blind spots.</p>
+          </div>
+          <div class="feature">
+            <h2>The risk</h2>
+            <p>When tools agree for the wrong reasons, a care team can believe it has safe redundancy when it actually has one shared failure pattern.</p>
+          </div>
+          <div class="feature">
+            <h2>The impact</h2>
+            <p>A missed finding can delay treatment or give false confidence in an AI consensus that was never independent.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="solution" class="section">
+      <div class="container">
+        <div class="grid">
+          <div class="feature">
+            <h2>Correlated error detection</h2>
+            <p>TrustScan is designed to track how often two tools miss the same confirmed finding, or raise the same false alarm.</p>
+          </div>
+          <div class="feature">
+            <h2>Blind spot analysis</h2>
+            <p>It highlights patient groups, anatomy types, and scan conditions where several tools fail together.</p>
+          </div>
+          <div class="feature">
+            <h2>Review alerts</h2>
+            <p>When agreement looks suspicious, the care team gets an alert suggesting a manual read. The clinician decides what to do.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="how" class="section">
+      <div class="container">
+        <h2 class="section-title">How it works</h2>
+        <ol class="steps">
+          <li><strong>Collect outputs</strong>Enter or import what each AI tool reported on the same case, with its confidence.</li>
+          <li><strong>Compare mistakes</strong>TrustScan counts how often tools miss the same confirmed finding, overall and by patient group.</li>
+          <li><strong>Suggest a review</strong>When agreement looks suspicious, it flags the case for a manual read and logs every action.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="impact" class="section stats">
+      <div class="container">
+        <p class="section-note">Why this matters now: diagnostic error is common, imaging AI is spreading fast, and early research on language models shows that different models often fail in the same way.</p>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-number">795,000</div>
+            <p>Americans estimated to die or be permanently disabled each year from diagnostic error (all causes, not only AI).</p>
+            <p class="src">Johns Hopkins researchers, BMJ Quality &amp; Safety, 2023</p>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">1,524</div>
+            <p>AI-enabled medical devices on the FDA list as of March 31, 2026. About 76% were radiology devices.</p>
+            <p class="src">FDA AI-Enabled Medical Device List</p>
+          </div>
+          <div class="stat-box">
+            <div class="stat-number">60%</div>
+            <p>On one benchmark, language models chose the same wrong answer 60% of the time when both were wrong.</p>
+            <p class="src">Kim et al., ICML 2025 (language models)</p>
+          </div>
+        </div>
+        <div class="caveat"><strong>Still to prove:</strong> the 60% finding comes from language models, not imaging tools. Showing the same effect in medical imaging is the first thing a TrustScan pilot would test.</div>
+      </div>
+    </section>
+
+    <footer id="contact">
+      <div class="container">
+        TrustScan: Verify true second opinions.<br />
+        Concept-stage project. Advisory monitoring for hospital AI governance.<br />
+        Contact information: add before submission if required.
+      </div>
+    </footer>
+  </main>
+</body>
+</html>
