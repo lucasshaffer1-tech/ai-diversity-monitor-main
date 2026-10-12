@@ -3,20 +3,85 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>TrustScan — Records</title>
-  <meta name="robots" content="noindex">
-  <style>body{font-family:Arial,Helvetica,sans-serif;padding:24px;color:#334}</style>
+  <title>TrustScan - Records</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f5f7f6;color:#1a1a1a;margin:0;line-height:1.6}
+    .container{max-width:1000px;margin:0 auto;padding:28px}
+    h1{color:#0e2a3f}
+    .controls{display:flex;gap:10px;align-items:center;margin-bottom:18px}
+    .btn{padding:8px 12px;border-radius:8px;background:#1a472a;color:#fff;text-decoration:none;font-weight:700}
+    .secondary{background:#fff;color:#0e2a3f;border:1px solid #dde5eb}
+    table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e6eef0}
+    th,td{padding:10px;border-bottom:1px solid #f1f5f6;text-align:left}
+    form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;background:#fff;padding:12px;border-radius:8px;border:1px solid #e6eef0}
+    input,select,textarea{padding:8px;border:1px solid #d9e2e7;border-radius:6px;width:100%}
+    .note{font-size:13px;color:#52606d;margin-top:8px}
+  </style>
 </head>
 <body>
-  <p>Loading TrustScan prototype — Records...</p>
+  <div class="container">
+    <h1>Records</h1>
+    <div class="controls">
+      <a class="btn" href="index.html">Home</a>
+      <a class="btn secondary" href="import.html">Import CSV</a>
+      <button id="exportBtn" class="btn secondary">Export CSV</button>
+      <div style="margin-left:auto" class="note">Records are stored in your browser (sample data only).</div>
+    </div>
+
+    <form id="recordForm">
+      <input id="caseId" placeholder="Case ID (e.g. 184920)" required />
+      <input id="toolA" placeholder="Tool A result (e.g. no lesion)" />
+      <input id="toolB" placeholder="Tool B result" />
+      <input id="toolC" placeholder="Tool C result" />
+      <select id="confirmed">
+        <option value="">Confirmed finding?</option>
+        <option value="yes">Yes</option>
+        <option value="no">No</option>
+      </select>
+      <input id="confidence" placeholder="Overall confidence (0-100)" type="number" min="0" max="100" />
+      <textarea id="notes" placeholder="Notes (optional)"></textarea>
+      <div style="grid-column:1/-1;text-align:right">
+        <button type="submit" class="btn">Add record</button>
+      </div>
+    </form>
+
+    <h2 style="margin-top:18px">Saved records</h2>
+    <table id="recordsTable">
+      <thead><tr><th>Case</th><th>Tool A</th><th>Tool B</th><th>Tool C</th><th>Confirmed</th><th>Confidence</th><th>Notes</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
   <script>
-    fetch('TrustScan/prototype.html')
-      .then(r => r.text())
-      .then(html => {
-        document.open(); document.write(html); document.close();
-        try { location.hash = '#records'; } catch (e) { }
+    const storageKey = 'trustscan_records'
+    function loadRecords(){
+      const raw = localStorage.getItem(storageKey)
+      return raw ? JSON.parse(raw) : []
+    }
+    function saveRecords(list){ localStorage.setItem(storageKey, JSON.stringify(list)) }
+    function render(){
+      const tbody = document.querySelector('#recordsTable tbody'); tbody.innerHTML=''
+      loadRecords().forEach(r=>{
+        const tr=document.createElement('tr')
+        tr.innerHTML=`<td>${r.caseId}</td><td>${r.toolA||''}</td><td>${r.toolB||''}</td><td>${r.toolC||''}</td><td>${r.confirmed||''}</td><td>${r.confidence||''}</td><td>${r.notes||''}</td>`
+        tbody.appendChild(tr)
       })
-      .catch(() => { document.body.innerHTML = '<p>Could not load the prototype. Open <a href="TrustScan/prototype.html">the prototype</a> instead.</p>'; });
+    }
+    document.getElementById('recordForm').addEventListener('submit',e=>{
+      e.preventDefault()
+      const rec={caseId:document.getElementById('caseId').value.trim(),toolA:document.getElementById('toolA').value,toolB:document.getElementById('toolB').value,toolC:document.getElementById('toolC').value,confirmed:document.getElementById('confirmed').value,confidence:document.getElementById('confidence').value,notes:document.getElementById('notes').value}
+      const list=loadRecords(); list.push(rec); saveRecords(list); render(); e.target.reset();
+    })
+    document.getElementById('exportBtn').addEventListener('click',()=>{
+      const rows = loadRecords()
+      if(!rows.length){ alert('No records to export'); return }
+      const header = ['caseId','toolA','toolB','toolC','confirmed','confidence','notes']
+      const csv = [header.join(',')].concat(rows.map(r=>header.map(h=>('"'+(r[h]||'').replace(/"/g,'""')+'"')).join(','))).join('\n')
+      const blob = new Blob([csv],{type:'text/csv'})
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a'); a.href=url; a.download='trustscan_records.csv'; a.click(); URL.revokeObjectURL(url)
+    })
+    render()
   </script>
 </body>
 </html>

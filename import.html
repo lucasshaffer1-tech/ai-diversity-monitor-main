@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TrustScan - Import Data</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f5f7f6;color:#1a1a1a;margin:0;line-height:1.6}
+    .container{max-width:980px;margin:0 auto;padding:28px}
+    h1{color:#0e2a3f}
+    .card{background:#fff;padding:16px;border-radius:10px;border:1px solid #e6eef0}
+    input[type=file]{padding:8px}
+    pre{background:#f7faf9;padding:12px;border-radius:8px;overflow:auto}
+    .btn{padding:8px 12px;border-radius:8px;background:#1a472a;color:#fff;text-decoration:none;font-weight:700;border:none}
+    .secondary{background:#fff;color:#0e2a3f;border:1px solid #dde5eb}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Import CSV data</h1>
+    <div class="card">
+      <p>Upload a CSV file with these headers (any order): caseId, toolA, toolB, toolC, confirmed, confidence, notes</p>
+      <input type="file" id="fileInput" accept="text/csv" />
+      <div style="margin-top:12px">
+        <button id="previewBtn" class="btn">Preview</button>
+        <a class="btn secondary" href="records.html">Back to records</a>
+      </div>
+      <div id="preview" style="margin-top:12px"></div>
+    </div>
+  </div>
+
+  <script>
+    const storageKey = 'trustscan_records'
+    const fileInput = document.getElementById('fileInput')
+    const previewEl = document.getElementById('preview')
+    function parseCSV(text){
+      const lines = text.split(/\r?\n/).filter(l=>l.trim()!=='')
+      if(!lines.length) return []
+      const header = lines[0].split(',').map(h=>h.trim())
+      return lines.slice(1).map(line=>{
+        const cols = line.split(',')
+        const obj = {}
+        header.forEach((h,i)=>obj[h]=cols[i] ? cols[i].trim().replace(/^"|"$/g,'') : '')
+        return obj
+      })
+    }
+    document.getElementById('previewBtn').addEventListener('click',()=>{
+      const file = fileInput.files[0]
+      if(!file){ alert('Choose a CSV file first'); return }
+      const reader = new FileReader()
+      reader.onload = e => {
+        try{
+          const rows = parseCSV(e.target.result)
+          if(!rows.length){ previewEl.innerHTML='<p>No rows found in CSV</p>'; return }
+          previewEl.innerHTML = `<p>Found ${rows.length} rows. First row preview:</p><pre>${JSON.stringify(rows[0],null,2)}</pre><p><button id="importBtn" class="btn">Import these rows into Records</button></p>`
+          document.getElementById('importBtn').addEventListener('click',()=>{
+            const existing = JSON.parse(localStorage.getItem(storageKey)||'[]')
+            const normalized = rows.map(r=>({caseId:r.caseId||r.caseID||r['Case ID']||'',toolA:r.toolA||r.toolA||'',toolB:r.toolB||'',toolC:r.toolC||'',confirmed:r.confirmed||'',confidence:r.confidence||'',notes:r.notes||''}))
+            const merged = existing.concat(normalized)
+            localStorage.setItem(storageKey,JSON.stringify(merged))
+            alert('Imported '+normalized.length+' rows.');
+            window.location.href='records.html'
+          })
+        }catch(err){ previewEl.innerHTML='<p>Error parsing CSV</p>' }
+      }
+      reader.readAsText(file)
+    })
+  </script>
+</body>
+</html>
